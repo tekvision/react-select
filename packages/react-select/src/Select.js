@@ -295,6 +295,7 @@ type MenuOptions = {
 type State = {
   ariaLiveSelection: string,
   ariaLiveContext: string,
+  ariaActiveDescendant: string,
   inputIsHidden: boolean,
   isFocused: boolean,
   focusedOption: OptionType | null,
@@ -312,6 +313,7 @@ export default class Select extends Component<Props, State> {
   state = {
     ariaLiveSelection: '',
     ariaLiveContext: '',
+    ariaActiveDescendant: '',
     focusedOption: null,
     focusedValue: null,
     inputIsHidden: false,
@@ -517,9 +519,10 @@ export default class Select extends Component<Props, State> {
       menuOptions,
       focusedValue: null,
       focusedOption: menuOptions.focusable[openAtIndex],
+      ariaActiveDescendant: menuOptions.render[openAtIndex].key,
     }, () => {
       this.onMenuOpen();
-      this.announceAriaLiveContext({ event: 'menu' });
+      //this.announceAriaLiveContext({ event: 'menu' });
     });
   }
   focusValue(direction: 'previous' | 'next') {
@@ -579,10 +582,10 @@ export default class Select extends Component<Props, State> {
     const { pageSize } = this.props;
     const { focusedOption, menuOptions } = this.state;
     const options = menuOptions.focusable;
-
     if (!options.length) return;
     let nextFocus = 0; // handles 'first'
     let focusedIndex = options.indexOf(focusedOption);
+
     if (!focusedOption) {
       focusedIndex = -1;
       this.announceAriaLiveContext({ event: 'menu' });
@@ -602,9 +605,11 @@ export default class Select extends Component<Props, State> {
       nextFocus = options.length - 1;
     }
     this.scrollToFocusedOptionOnUpdate = true;
+    //alert(menuOptions.render[nextFocus].key);
     this.setState({
       focusedOption: options[nextFocus],
       focusedValue: null,
+      ariaActiveDescendant: menuOptions.render[nextFocus].key,
     });
     this.announceAriaLiveContext({
       event: 'menu',
@@ -817,7 +822,6 @@ export default class Select extends Component<Props, State> {
 
     const index = menuOptions.focusable.indexOf(focusedOption);
     const option = menuOptions.render[index];
-
     return option && option.key;
   };
 
@@ -1416,8 +1420,9 @@ export default class Select extends Component<Props, State> {
       inputValue,
       tabIndex,
       form,
+      menuIsOpen
     } = this.props;
-    const { Input } = this.components;
+    const { Input, ariaActiveDescendant} = this.components;
     const { inputIsHidden } = this.state;
 
     const id = inputId || this.getElementId('input');
@@ -1427,10 +1432,12 @@ export default class Select extends Component<Props, State> {
     // aria attributes makes the JSX "noisy", separated for clarity
     const ariaAttributes = {
       role: menuRole,
-      'aria-owns': menuId,
-      'aria-autocomplete': 'list',
+      'aria-controls': menuId,
+      'aria-autocomplete': 'both',
       'aria-label': this.props['aria-label'],
       'aria-labelledby': this.props['aria-labelledby'],
+      'aria-expanded': menuIsOpen,
+      'aria-activedescendant': this.state.ariaActiveDescendant,
     };
 
     if (!isSearchable) {
@@ -1827,7 +1834,7 @@ export default class Select extends Component<Props, State> {
     return (
       <A11yText aria-live="polite">
         <span id="aria-selection-event">&nbsp;{this.state.ariaLiveSelection}</span>
-        <span id="aria-context">&nbsp;{this.constructAriaLiveMessage()}</span>
+        <span aria-hidden="true" id="aria-context">&nbsp;{this.constructAriaLiveMessage()}</span>
       </A11yText>
     );
   }
