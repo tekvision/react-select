@@ -1437,6 +1437,7 @@ export default class Select extends Component<Props, State> {
       'aria-label': this.props['aria-label'],
       'aria-labelledby': this.props['aria-labelledby'],
       'aria-expanded': menuIsOpen,
+      'aria-haspopup': 'true',
       'aria-activedescendant': this.state.ariaActiveDescendant,
     };
 
